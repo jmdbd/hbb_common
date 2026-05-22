@@ -145,7 +145,7 @@ lazy_static::lazy_static! {
         // 自动更新
         map.insert("allow-auto-update".to_string(), "Y".to_string());
         // 静音，Y：启用音频（复选框勾选表示静音）
-        map.insert("enable-audio".to_string(), "Y".to_string());
+        map.insert("enable-audio".to_string(), "N".to_string());
         // 允许IP直接访问
         map.insert("direct-server".to_string(), "Y".to_string());
         RwLock::new(map)
