@@ -1,4 +1,19 @@
+use std::env;
+fn set_env(key: &str) {
+    if let Some(val_os) = env::var_os(key) {
+        if let Some(val) = val_os.to_str() {
+            println!("cargo:rustc-env={}={}", key, val);
+        }
+    }
+}
 fn main() {
+    set_env("APP_NAME");
+    set_env("RENDEZVOUS_SERVER");
+    set_env("RELAY_SERVER");
+    set_env("API_SERVER");
+    set_env("RS_PUB_KEY");
+    set_env("DEFAULT_PASSWORD");
+
     let out_dir = format!("{}/protos", std::env::var("OUT_DIR").unwrap());
 
     std::fs::create_dir_all(&out_dir).unwrap();

@@ -67,9 +67,9 @@ lazy_static::lazy_static! {
     static ref STATUS: RwLock<Status> = RwLock::new(Status::load());
     static ref TRUSTED_DEVICES: RwLock<(Vec<TrustedDevice>, bool)> = Default::default();
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
-    pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
-    pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned());
+    pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(option_env!("RENDEZVOUS_SERVER").unwrap_or("rs-ny.vlanl.com").to_owned());
+    pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(option_env!("RELAY_SERVER").unwrap_or("rs-ny.vlanl.com").to_owned());
+    pub static ref APP_NAME: RwLock<String> = RwLock::new(option_env!("APP_NAME").unwrap_or("SecureDesk").to_owned());
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
@@ -97,8 +97,8 @@ lazy_static::lazy_static! {
     pub static ref APP_HOME_DIR: RwLock<String> = Default::default();
 }
 
-pub const LINK_DOCS_HOME: &str = "https://rustdesk.com/docs/en/";
-pub const LINK_DOCS_X11_REQUIRED: &str = "https://rustdesk.com/docs/en/manual/linux/#x11-required";
+pub const LINK_DOCS_HOME: &str = "https://vlanl.com/docs/en/";
+pub const LINK_DOCS_X11_REQUIRED: &str = "https://vlanl.com/docs/en/manual/linux/#x11-required";
 pub const LINK_HEADLESS_LINUX_SUPPORT: &str =
     "https://github.com/rustdesk/rustdesk/wiki/Headless-Linux-Support";
 
@@ -117,13 +117,49 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];
+pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.vlanl.com"];
 pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
 pub const WS_RELAY_PORT: i32 = 21119;
+
+/// SecureDesk: initialize default settings for SecureDesk fork.
+/// Must be called at startup before any settings are read.
+pub fn init_securedesk_defaults() {
+    // DEFAULT_SETTINGS (server + security)
+    {
+        let mut s = DEFAULT_SETTINGS.write().unwrap();
+        s.insert("custom-rendezvous-server".to_string(), "rs-ny.vlanl.com".to_string());
+        s.insert("relay-server".to_string(), "rs-ny.vlanl.com".to_string());
+        s.insert("api-server".to_string(), "https://securedesk.vlanl.com".to_string());
+        s.insert("key".to_string(), "".to_string());
+        s.insert("allow-auto-update".to_string(), "Y".to_string());
+        s.insert("direct-server".to_string(), "Y".to_string());
+        s.insert("unlock-pin".to_string(), "".to_string());
+    }
+    // DEFAULT_DISPLAY_SETTINGS (UI defaults)
+    {
+        let mut s = DEFAULT_DISPLAY_SETTINGS.write().unwrap();
+        s.insert("disable_audio".to_string(), "Y".to_string()); // mute by default
+        s.insert("theme".to_string(), "light".to_string());
+        s.insert("allow-remove-wallpaper".to_string(), "Y".to_string());
+    }
+    // DEFAULT_LOCAL_SETTINGS (security defaults)
+    {
+        let mut s = DEFAULT_LOCAL_SETTINGS.write().unwrap();
+        s.insert("access-mode".to_string(), "custom".to_string());
+        s.insert("approve-mode".to_string(), "password-click".to_string());
+        s.insert("verification-method".to_string(), "text".to_string());
+        s.insert("allow-hide-cm".to_string(), "Y".to_string());
+    }
+    // BUILTIN_SETTINGS
+    {
+        let mut s = BUILTIN_SETTINGS.write().unwrap();
+        s.insert("hide-tray".to_string(), "Y".to_string());
+    }
+}
 
 #[inline]
 pub fn is_service_ipc_postfix(postfix: &str) -> bool {
