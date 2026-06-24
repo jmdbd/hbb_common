@@ -73,14 +73,82 @@ lazy_static::lazy_static! {
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
-    pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        //ID服务器，该配置部分客户端生效，读取Repository secrets值
+        map.insert(
+            "custom-rendezvous-server".to_string(),
+            option_env!("RENDEZVOUS_SERVER").unwrap_or("rs-ny.vlanl.com").into()
+        );
+        //中继服务器，读取Repository secrets值
+        map.insert(
+            "relay-server".to_string(),
+            option_env!("RELAY_SERVER").unwrap_or("rs-ny.vlanl.com").into()
+        );
+        //API服务器，读取Repository secrets值
+        map.insert(
+            "api-server".to_string(),
+            option_env!("API_SERVER").unwrap_or("").into()
+        );
+        //KEY，读取Repository secrets值
+        map.insert(
+            "key".to_string(),
+            option_env!("RS_PUB_KEY").unwrap_or("OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=").into()
+        );
+        //PIN解锁，读取Repository secrets值
+        map.insert(
+            "unlock-pin".to_string(),
+            option_env!("DEFAULT_PASSWORD").unwrap_or("").into()
+        );
+        //使用DirectX捕获屏幕
+        map.insert("enable-directx-capture".to_string(), "Y".to_string());
+        //访问模式，custom：自定义，full：完全控制，view：共享屏幕
+        map.insert("access-mode".to_string(), "full".to_string());
+        //自动更新
+        map.insert("allow-auto-update".to_string(), "Y".to_string());
+        //静音，Y：启用音频（复选框勾选表示静音）
+        map.insert("enable-audio".to_string(), "N".to_string());
+        //允许 IP 直接访问
+        map.insert("direct-server".to_string(), "Y".to_string());
+        //允许远程重启
+        map.insert("enable-remote-restart".to_string(), "Y".to_string());
+        //允许远程修改配置
+        map.insert("allow-remote-config-modification".to_string(), "Y".to_string());
+        //接受远程方式，password：密码，click：点击，password-click：同时使用
+        map.insert("approve-mode".to_string(), "password".to_string());
+        //密码验证方式，use-temporary-password：一次性密码，use-permanent-password：固定密码，use-both-passwords：同时使用
+        map.insert("verification-method".to_string(), "use-permanent-password".to_string());
+        //隐藏连接管理窗口，approve-mode=password，verification-method=use-permanent-password，才可生效
+        map.insert("allow-hide-cm".to_string(), "Y".to_string());
+        //隐藏托盘图标，approve-mode=password，verification-method=use-permanent-password，才可生效
+        map.insert("hide-tray".to_string(), "Y".to_string());
+        RwLock::new(map)
+    };
     pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        //默认连接密码，请求控制的时候要求输入的密码，读取Repository secrets值
+        map.insert(
+            "default-connect-password".to_string(),
+            option_env!("DEFAULT_PASSWORD").unwrap_or("").into()
+        );
+        //隐藏远程打印设置选项
+        map.insert("hide-remote-printer-settings".to_string(), "N".to_string());
+        //隐藏代理设置选项
+        map.insert("hide-proxy-settings".to_string(), "N".to_string());
+        //隐藏服务设置选项
+        map.insert("hide-server-settings".to_string(), "N".to_string());
+        //隐藏安全设置选项
+        map.insert("hide-security-settings".to_string(), "N".to_string());
+        //隐藏网络设置选项
+        map.insert("hide-network-settings".to_string(), "N".to_string());
+        RwLock::new(map)
+    };
 }
 
 #[cfg(target_os = "android")]
@@ -125,20 +193,9 @@ pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
 pub const WS_RELAY_PORT: i32 = 21119;
 
-/// SecureDesk: initialize default settings for SecureDesk fork.
-/// Must be called at startup before any settings are read.
+/// SecureDesk: initialize default display and local settings for SecureDesk fork.
+/// DEFAULT_SETTINGS and BUILTIN_SETTINGS are initialized in lazy_static above.
 pub fn init_securedesk_defaults() {
-    // DEFAULT_SETTINGS (server + security)
-    {
-        let mut s = DEFAULT_SETTINGS.write().unwrap();
-        s.insert("custom-rendezvous-server".to_string(), "rs-ny.vlanl.com".to_string());
-        s.insert("relay-server".to_string(), "rs-ny.vlanl.com".to_string());
-        s.insert("api-server".to_string(), "https://securedesk.vlanl.com".to_string());
-        s.insert("key".to_string(), "".to_string());
-        s.insert("allow-auto-update".to_string(), "Y".to_string());
-        s.insert("direct-server".to_string(), "Y".to_string());
-        s.insert("unlock-pin".to_string(), "".to_string());
-    }
     // DEFAULT_DISPLAY_SETTINGS (UI defaults)
     {
         let mut s = DEFAULT_DISPLAY_SETTINGS.write().unwrap();
@@ -153,11 +210,6 @@ pub fn init_securedesk_defaults() {
         s.insert("approve-mode".to_string(), "password-click".to_string());
         s.insert("verification-method".to_string(), "text".to_string());
         s.insert("allow-hide-cm".to_string(), "Y".to_string());
-    }
-    // BUILTIN_SETTINGS
-    {
-        let mut s = BUILTIN_SETTINGS.write().unwrap();
-        s.insert("hide-tray".to_string(), "Y".to_string());
     }
 }
 
