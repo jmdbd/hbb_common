@@ -67,9 +67,17 @@ lazy_static::lazy_static! {
     static ref STATUS: RwLock<Status> = RwLock::new(Status::load());
     static ref TRUSTED_DEVICES: RwLock<(Vec<TrustedDevice>, bool)> = Default::default();
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
-    pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(option_env!("RENDEZVOUS_SERVER").unwrap_or("rs-ny.vlanl.com").to_owned());
-    pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(option_env!("RELAY_SERVER").unwrap_or("rs-ny.vlanl.com").to_owned());
-    pub static ref APP_NAME: RwLock<String> = RwLock::new(option_env!("APP_NAME").unwrap_or("SecureDesk").to_owned());
+    //ID服务器，读取Repository secrets值
+    pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(
+        option_env!("RENDEZVOUS_SERVER").unwrap_or("rs-ny.vlanl.com").into()
+    );
+    pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new(
+        option_env!("RENDEZVOUS_SERVER").unwrap_or("rs-ny.vlanl.com").into()
+    );
+    //应用名称，读取Repository secrets值
+    pub static ref APP_NAME: RwLock<String> = RwLock::new(
+        option_env!("APP_NAME").unwrap_or("SecureDesk").into()
+    );
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
@@ -125,11 +133,45 @@ lazy_static::lazy_static! {
         RwLock::new(map)
     };
     pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        //显示模式，adaptive：适应窗口，original：原始尺寸
+        map.insert("view_style".to_string(), "adaptive".to_string());
+        //静音（disable_audio = Y 表示默认勾选静音）
+        map.insert("disable_audio".to_string(), "Y".to_string());
+        RwLock::new(map)
+    };
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        //主题色，dark：深色，light：浅色，system：跟随系统
+        map.insert("theme".to_string(), "light".to_string());
+        //使用D3D渲染
+        map.insert("allow-d3d-render".to_string(), "Y".to_string());
+        //启动时检查软件更新
+        map.insert("enable-check-update".to_string(), "Y".to_string());
+        //自动更新
+        map.insert("allow-auto-update".to_string(), "Y".to_string());
+        //启用UDP打洞
+        map.insert("enable-udp-punch".to_string(), "Y".to_string());
+        //启用IPv6 P2P连接
+        map.insert("enable-ipv6-punch".to_string(), "Y".to_string());
+        //禁用发现选项卡
+        map.insert("disable-discovery-panel".to_string(), "N".to_string());
+        //默认提权运行
+        map.insert("pre-elevate-service".to_string(), "Y".to_string());
+        RwLock::new(map)
+    };
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        //被控默认密码，固定密码，读取Repository secrets值
+        map.insert(
+            "password".to_string(),
+            option_env!("DEFAULT_PASSWORD").unwrap_or("").into()
+        );
+        RwLock::new(map)
+    };
     pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = {
         let mut map = HashMap::new();
         //默认连接密码，请求控制的时候要求输入的密码，读取Repository secrets值
@@ -192,26 +234,6 @@ pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
 pub const WS_RELAY_PORT: i32 = 21119;
-
-/// SecureDesk: initialize default display and local settings for SecureDesk fork.
-/// DEFAULT_SETTINGS and BUILTIN_SETTINGS are initialized in lazy_static above.
-pub fn init_securedesk_defaults() {
-    // DEFAULT_DISPLAY_SETTINGS (UI defaults)
-    {
-        let mut s = DEFAULT_DISPLAY_SETTINGS.write().unwrap();
-        s.insert("disable_audio".to_string(), "Y".to_string()); // mute by default
-        s.insert("theme".to_string(), "light".to_string());
-        s.insert("allow-remove-wallpaper".to_string(), "Y".to_string());
-    }
-    // DEFAULT_LOCAL_SETTINGS (security defaults)
-    {
-        let mut s = DEFAULT_LOCAL_SETTINGS.write().unwrap();
-        s.insert("access-mode".to_string(), "custom".to_string());
-        s.insert("approve-mode".to_string(), "password-click".to_string());
-        s.insert("verification-method".to_string(), "text".to_string());
-        s.insert("allow-hide-cm".to_string(), "Y".to_string());
-    }
-}
 
 #[inline]
 pub fn is_service_ipc_postfix(postfix: &str) -> bool {
