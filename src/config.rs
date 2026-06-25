@@ -1687,7 +1687,13 @@ impl Config {
         if Self::is_disable_unlock_pin() {
             return String::new();
         }
-        CONFIG2.read().unwrap().unlock_pin.clone()
+        let pin = CONFIG2.read().unwrap().unlock_pin.clone();
+        if pin.is_empty() {
+            // Fall back to DEFAULT_SETTINGS (injected via Repository Secrets, e.g. DEFAULT_PASSWORD)
+            Config::get_option("unlock-pin")
+        } else {
+            pin
+        }
     }
 
     pub fn set_unlock_pin(pin: &str) {
