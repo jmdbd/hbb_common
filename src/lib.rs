@@ -481,6 +481,8 @@ pub struct VersionCheckRequest {
     pub device_id: Vec<u8>,
     #[serde(default)]
     pub typ: String,
+    #[serde(default)]
+    pub version: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -492,7 +494,7 @@ pub struct VersionCheckResponse {
 pub const VER_TYPE_RUSTDESK_CLIENT: &str = "rustdesk-client";
 pub const VER_TYPE_RUSTDESK_SERVER: &str = "rustdesk-server";
 
-pub fn version_check_request(typ: String) -> (VersionCheckRequest, String) {
+pub fn version_check_request(typ: String, version: String) -> (VersionCheckRequest, String) {
     const URL: &str = "https://securedesk.vlanl.com/up/securedesk/version/latest.php";
 
     use sysinfo::System;
@@ -509,6 +511,7 @@ pub fn version_check_request(typ: String) -> (VersionCheckRequest, String) {
             arch,
             device_id,
             typ,
+            version,
         },
         URL.to_string(),
     )
