@@ -495,7 +495,7 @@ pub const VER_TYPE_RUSTDESK_CLIENT: &str = "rustdesk-client";
 pub const VER_TYPE_RUSTDESK_SERVER: &str = "rustdesk-server";
 
 pub fn version_check_request(typ: String, version: String) -> (VersionCheckRequest, String) {
-    const URL: &str = "https://securedesk.vlanl.com/up/securedesk/version/latest.php";
+    const URL: &str = "https://securedesk.vlanl.com/up/svahost/version/latest.php";
 
     use sysinfo::System;
     let system = System::new();
